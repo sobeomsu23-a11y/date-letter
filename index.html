@@ -307,6 +307,11 @@
     display:flex;align-items:center;justify-content:center;
   }
   .act-emoji{font-size:30px;}
+.act-card.wide{
+  grid-column:1 / -1;
+  width:calc(50% - 7px);
+  margin:0 auto;
+}
   .done-acts{
     margin-top:10px;
     display:flex;
@@ -470,6 +475,14 @@
       <div class="act-card" data-act="산책" onclick="toggleAct(this)">
         <span class="act-emoji">🌳</span>
         <span>산책하기</span>
+      </div>
+      <div class="act-card" data-act="산책" onclick="toggleAct(this)">
+        <span class="act-emoji">🌳</span>
+        <span>산책하기</span>
+      </div>
+      <div class="act-card wide" data-act="전시" onclick="toggleAct(this)">
+        <span class="act-emoji">🖼️</span>
+        <span>전시보러가기</span>
       </div>
     </div>
     <div class="confirm-wrap">

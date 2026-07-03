@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>데이트 신청</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Do+Hyeon&family=Gowun+Dodum&family=Nanum+Pen+Script&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#FFF4DA;
+    --paper-alt:#FFFDF6;
+    --ink:#3B2A2F;
+    --pink:#FF8FAE;
+    --mint:#7FDCC6;
+    --marigold:#FFC145;
+    --lilac:#C6A6F2;
+    --line:#3B2A2F;
+  }
+  *{box-sizing:border-box;}
+  html,body{
+    margin:0;padding:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Gowun Dodum', sans-serif;
+    overflow:hidden;
+    height:100%;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .display{font-family:'Do Hyeon', sans-serif;}
+  .hand{font-family:'Nanum Pen Script', cursive;}
+
+  #stage{
+    position:relative;
+    width:100%;
+    height:100vh;
+    height:100dvh;
+    overflow:hidden;
+  }
+
+  .bg-doodle{
+    position:absolute;
+    opacity:.5;
+    pointer-events:none;
+    user-select:none;
+  }
+
+  .section{
+    position:absolute;
+    inset:0;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    padding:32px 20px;
+    opacity:0;
+    visibility:hidden;
+    transform:translateY(24px) scale(.98);
+    transition:opacity .55s ease, transform .55s ease, visibility .55s;
+    text-align:center;
+  }
+  .section.active{
+    opacity:1;
+    visibility:visible;
+    transform:translateY(0) scale(1);
+  }
+
+  /* progress dots */
+  #progress{
+    position:absolute;
+    top:18px; left:50%; transform:translateX(-50%);
+    display:flex; gap:8px; z-index:50;
+  }
+  #progress span{
+    width:9px;height:9px;border-radius:50%;
+    background:#fff; border:2px solid var(--ink);
+    opacity:.4; transition:all .3s;
+  }
+  #progress span.on{opacity:1; background:var(--pink);}
+
+  /* ---------- Section 0 : Cover ---------- */
+  .stamp{
+    width:150px;height:150px;
+    border-radius:50%;
+    background:var(--pink);
+    border:3px solid var(--ink);
+    display:flex;align-items:center;justify-content:center;
+    font-size:56px;
+    cursor:pointer;
+    box-shadow:0 6px 0 var(--ink);
+    transition:transform .15s, box-shadow .15s;
+    animation:float 3s ease-in-out infinite;
+    position:relative;
+  }
+  .stamp:active{transform:translateY(6px); box-shadow:0 0 0 var(--ink);}
+  @keyframes float{
+    0%,100%{transform:translateY(0) rotate(-3deg);}
+    50%{transform:translateY(-10px) rotate(3deg);}
+  }
+  .cover h1{
+    font-size:clamp(26px,7vw,40px);
+    margin:26px 0 6px;
+    line-height:1.35;
+  }
+  .cover p{
+    font-size:18px;
+    opacity:.75;
+    margin:0;
+  }
+  .tape{
+    position:absolute;
+    width:70px;height:26px;
+    background:rgba(255,193,69,.75);
+    border:1px dashed var(--ink);
+  }
+
+  /* ---------- Section 1 : messages ---------- */
+  .cards{
+    display:flex;
+    flex-direction:column;
+    gap:20px;
+    max-width:420px;
+    width:100%;
+  }
+  .note{
+    background:var(--paper-alt);
+    border:3px solid var(--ink);
+    border-radius:18px 24px 20px 26px / 22px 18px 26px 20px;
+    padding:20px 22px;
+    box-shadow:6px 6px 0 rgba(59,42,47,.18);
+    font-size:17px;
+    line-height:1.7;
+  }
+  .note:nth-child(1){transform:rotate(-2deg);}
+  .note:nth-child(2){transform:rotate(2deg);}
+  .note .doodle{font-size:22px; display:block; margin-bottom:6px;}
+
+  .next-btn{
+    margin-top:26px;
+  }
+
+  /* ---------- buttons (shared) ---------- */
+  .btn{
+    font-family:'Do Hyeon', sans-serif;
+    font-size:18px;
+    padding:14px 30px;
+    border-radius:999px;
+    border:3px solid var(--ink);
+    background:var(--mint);
+    color:var(--ink);
+    cursor:pointer;
+    box-shadow:4px 4px 0 var(--ink);
+    transition:transform .12s, box-shadow .12s;
+  }
+  .btn:hover{transform:translate(-2px,-2px); box-shadow:6px 6px 0 var(--ink);}
+  .btn:active{transform:translate(2px,2px); box-shadow:1px 1px 0 var(--ink);}
+  .btn.primary{background:var(--pink);}
+  .btn.wide{width:100%; max-width:320px;}
+  .btn:disabled{opacity:.4; cursor:not-allowed; box-shadow:none;}
+
+  /* ---------- Section 2 : question ---------- */
+  #q-wrap{
+    position:relative;
+    width:100%;
+    max-width:480px;
+    height:100%;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+  }
+  .q-title{
+    font-size:clamp(24px,6.5vw,36px);
+    margin-bottom:34px;
+  }
+  .q-buttons{
+    position:relative;
+    width:100%;
+    height:140px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:22px;
+  }
+  #btn-no{
+    position:absolute;
+    left:50%; top:50%;
+    transform:translate(calc(-50% + 90px), -50%);
+    background:var(--paper-alt);
+    white-space:nowrap;
+  }
+  #btn-yes{
+    position:relative;
+    left:auto;
+    transform:translateX(-90px);
+  }
+  .flee-caption{
+    margin-top:18px;
+    font-size:20px;
+    min-height:28px;
+    opacity:0;
+    transition:opacity .3s;
+  }
+  .flee-caption.show{opacity:1;}
+
+  /* ---------- Section 3 : calendar ---------- */
+  .cal-title{font-size:clamp(22px,6vw,30px); margin-bottom:14px;}
+  .cal-box{
+    background:var(--paper-alt);
+    border:3px solid var(--ink);
+    border-radius:22px;
+    padding:18px;
+    width:100%;
+    max-width:360px;
+    box-shadow:6px 6px 0 rgba(59,42,47,.18);
+  }
+  .cal-nav{
+    display:flex;justify-content:space-between;align-items:center;
+    margin-bottom:8px;
+    font-family:'Do Hyeon', sans-serif;
+    font-size:18px;
+  }
+  .cal-nav button{
+    background:none;border:none;font-size:20px;cursor:pointer;
+    color:var(--ink); padding:4px 10px;
+  }
+  .cal-nav button:disabled{opacity:.25; cursor:default;}
+  .cal-grid{
+    display:grid;
+    grid-template-columns:repeat(7,1fr);
+    gap:4px;
+    font-size:13px;
+  }
+  .cal-grid .dow{opacity:.55; padding:4px 0; font-size:12px;}
+  .cal-day{
+    aspect-ratio:1/1;
+    display:flex;align-items:center;justify-content:center;
+    border-radius:50%;
+    cursor:pointer;
+    position:relative;
+    font-size:14px;
+  }
+  .cal-day.empty{cursor:default;}
+  .cal-day.past{opacity:.25; cursor:default;}
+  .cal-day:not(.empty):not(.past):hover{background:rgba(255,143,174,.25);}
+  .cal-day.selected::before{
+    content:"";
+    position:absolute; inset:-3px;
+    border:3px solid var(--pink);
+    border-radius:50% 45% 50% 48%/48% 50% 45% 52%;
+  }
+  .time-row{
+    display:flex; gap:10px; justify-content:center; margin-top:18px;
+    flex-wrap:wrap;
+  }
+  select.pill{
+    font-family:'Do Hyeon', sans-serif;
+    font-size:16px;
+    padding:10px 16px;
+    border-radius:999px;
+    border:3px solid var(--ink);
+    background:var(--paper-alt);
+    color:var(--ink);
+    appearance:none;
+    -webkit-appearance:none;
+    cursor:pointer;
+  }
+  .confirm-wrap{margin-top:24px;}
+
+  /* ---------- activities ---------- */
+  .act-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:14px;
+    max-width:340px;
+    width:100%;
+  }
+  .act-card{
+    background:var(--paper-alt);
+    border:3px solid var(--ink);
+    border-radius:20px;
+    padding:20px 10px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:8px;
+    font-size:15px;
+    cursor:pointer;
+    box-shadow:4px 4px 0 rgba(59,42,47,.18);
+    transition:transform .12s, box-shadow .12s, background .12s;
+  }
+  .act-card:hover{transform:translate(-1px,-1px); box-shadow:5px 5px 0 rgba(59,42,47,.18);}
+  .act-card:active{transform:translate(2px,2px); box-shadow:1px 1px 0 rgba(59,42,47,.18);}
+  .act-card.selected{
+    background:var(--mint);
+    box-shadow:4px 4px 0 var(--ink);
+  }
+  .act-card.selected::after{
+    content:"✔";
+    position:absolute;
+    margin-top:-42px; margin-left:64px;
+    font-size:13px;
+    background:var(--pink);
+    border:2px solid var(--ink);
+    border-radius:50%;
+    width:20px;height:20px;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .act-emoji{font-size:30px;}
+  .done-acts{
+    margin-top:10px;
+    display:flex;
+    flex-wrap:wrap;
+    gap:6px;
+    justify-content:center;
+  }
+  .done-acts span{
+    font-size:13px;
+    background:var(--paper);
+    border:2px solid var(--ink);
+    border-radius:999px;
+    padding:4px 10px;
+  }
+
+  /* ---------- Section 4 : done ---------- */
+  .done-icon{font-size:60px; margin-bottom:8px;}
+  .done-card{
+    background:var(--paper-alt);
+    border:3px solid var(--ink);
+    border-radius:22px;
+    padding:26px 24px;
+    max-width:360px;
+    width:100%;
+    box-shadow:6px 6px 0 rgba(59,42,47,.18);
+    transform:rotate(-1deg);
+  }
+  .done-date{
+    font-family:'Do Hyeon', sans-serif;
+    font-size:26px;
+    margin:10px 0 2px;
+  }
+  .done-time{
+    font-family:'Do Hyeon', sans-serif;
+    font-size:20px;
+    color:var(--pink);
+    margin:0 0 12px;
+  }
+  .done-sub{font-size:15px; opacity:.75; line-height:1.6;}
+  .redo{
+    margin-top:16px;
+    background:none;border:none;
+    text-decoration:underline;
+    font-family:'Gowun Dodum', sans-serif;
+    font-size:14px;
+    color:var(--ink);
+    opacity:.6;
+    cursor:pointer;
+  }
+
+  .confetti{
+    position:absolute;
+    font-size:20px;
+    pointer-events:none;
+    animation:fall linear forwards;
+  }
+  @keyframes fall{
+    to{ transform:translateY(110vh) rotate(360deg); opacity:0; }
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    *{animation:none !important; transition:none !important;}
+  }
+</style>
+</head>
+<body>
+
+<div id="stage">
+  <div id="progress">
+    <span data-i="0"></span><span data-i="1"></span><span data-i="2"></span><span data-i="3"></span><span data-i="4"></span><span data-i="5"></span>
+  </div>
+
+  <!-- 0. Cover -->
+  <section class="section active" id="sec0">
+    <div class="tape" style="top:8%; left:18%; transform:rotate(-8deg);"></div>
+    <div class="tape" style="top:12%; right:16%; transform:rotate(10deg);"></div>
+    <div class="stamp" id="openStamp">💌</div>
+    <h1 class="display">눌러서<br>열어보기</h1>
+    <p class="hand">— 두근두근, 준비됐어요? —</p>
+  </section>
+
+  <!-- 1. Messages -->
+  <section class="section" id="sec1">
+    <div class="cards">
+      <div class="note">
+        <span class="doodle">☕️</span>
+        요즘 계속 생각나는 사람이 있어요.<br>
+        다름 아니라, 바로 당신이에요.
+      </div>
+      <div class="note">
+        <span class="doodle">✨</span>
+        시간 내서 같이 보내고 싶은데,<br>
+        마침 하고 싶은 말이 있어서 이 페이지를 만들었어요.
+      </div>
+    </div>
+    <div class="next-btn">
+      <button class="btn primary" onclick="goTo(2)">다음 →</button>
+    </div>
+  </section>
+
+  <!-- 2. Question -->
+  <section class="section" id="sec2">
+    <div id="q-wrap">
+      <div class="q-title display">저랑 데이트<br>하실래요?</div>
+      <div class="q-buttons">
+        <button class="btn primary" id="btn-yes" onclick="goTo(3)">네 🤍</button>
+        <button class="btn" id="btn-no">음... 아니요</button>
+      </div>
+      <div class="flee-caption hand" id="fleeCaption"></div>
+    </div>
+  </section>
+
+  <!-- 3. Calendar -->
+  <section class="section" id="sec3">
+    <div class="cal-title display">좋아요!<br>언제가 좋아요?</div>
+    <div class="cal-box">
+      <div class="cal-nav">
+        <button id="prevMonth" onclick="changeMonth(-1)">‹</button>
+        <span id="monthLabel"></span>
+        <button id="nextMonth" onclick="changeMonth(1)">›</button>
+      </div>
+      <div class="cal-grid" id="calGrid"></div>
+      <div class="time-row">
+        <select class="pill" id="hourSel"></select>
+        <select class="pill" id="minSel">
+          <option value="00">00분</option>
+          <option value="10">10분</option>
+          <option value="20">20분</option>
+          <option value="30">30분</option>
+          <option value="40">40분</option>
+          <option value="50">50분</option>
+        </select>
+        <select class="pill" id="ampmSel">
+          <option value="오전">오전</option>
+          <option value="오후" selected>오후</option>
+        </select>
+      </div>
+    </div>
+    <div class="confirm-wrap">
+      <button class="btn primary wide" id="confirmBtn" disabled onclick="goTo(4)">다음: 뭐 하고 싶어요? →</button>
+    </div>
+  </section>
+
+  <!-- 4. Activities -->
+  <section class="section" id="sec4">
+    <div class="cal-title display">뭐 하면서<br>시간 보낼까요?</div>
+    <p class="hand" style="font-size:18px; margin:0 0 20px;">하고 싶은 거 다 골라도 돼요</p>
+    <div class="act-grid">
+      <div class="act-card" data-act="식사" onclick="toggleAct(this)">
+        <span class="act-emoji">🍽️</span>
+        <span>맛있는 식사</span>
+      </div>
+      <div class="act-card" data-act="영화" onclick="toggleAct(this)">
+        <span class="act-emoji">🎬</span>
+        <span>영화보기</span>
+      </div>
+      <div class="act-card" data-act="카페" onclick="toggleAct(this)">
+        <span class="act-emoji">☕️</span>
+        <span>카페가기</span>
+      </div>
+      <div class="act-card" data-act="산책" onclick="toggleAct(this)">
+        <span class="act-emoji">🌳</span>
+        <span>산책하기</span>
+      </div>
+    </div>
+    <div class="confirm-wrap">
+      <button class="btn primary wide" id="actConfirmBtn" disabled onclick="finalize()">이걸로 약속할게요 🎀</button>
+    </div>
+  </section>
+
+  <!-- 5. Done -->
+  <section class="section" id="sec5">
+    <div class="done-icon">🎉</div>
+    <div class="done-card">
+      <div class="hand" style="font-size:18px;">약속 확정!</div>
+      <div class="done-date" id="doneDate"></div>
+      <div class="done-time" id="doneTime"></div>
+      <div class="done-acts" id="doneActs"></div>
+      <div class="done-sub">이 화면 캡처해서<br>저한테 보내주세요! 기다릴게요 🤍</div>
+    </div>
+    <button class="redo" onclick="goTo(3)">날짜 다시 고를래요</button>
+  </section>
+
+</div>
+
+<script>
+  /* -------- navigation -------- */
+  const sections = [...document.querySelectorAll('.section')];
+  const dots = [...document.querySelectorAll('#progress span')];
+  function goTo(i){
+    sections.forEach((s,idx)=>s.classList.toggle('active', idx===i));
+    dots.forEach((d,idx)=>d.classList.toggle('on', idx===i));
+    if(i===5){ burstConfetti(); }
+  }
+  document.getElementById('openStamp').addEventListener('click', ()=>goTo(1));
+
+  /* -------- runaway NO button -------- */
+  const btnNo = document.getElementById('btn-no');
+  const qWrap = document.getElementById('q-wrap');
+  const btnYes = document.getElementById('btn-yes');
+  const caption = document.getElementById('fleeCaption');
+  const captions = [
+    '어어, 잡히면 안 되는데', '그러지 말고 다시 생각해봐요',
+    '저기요, 다시 눌러봐요', '못 잡을걸요?', '한번만 더요!'
+  ];
+  let dodgeCount = 0;
+
+  function dodge(){
+    const box = qWrap.getBoundingClientRect();
+    const btnW = btnNo.offsetWidth, btnH = btnNo.offsetHeight;
+    const maxX = box.width - btnW - 12;
+    const maxY = box.height - btnH - 12;
+    const x = Math.max(12, Math.random()*maxX);
+    const y = Math.max(12, Math.random()*maxY);
+    btnNo.style.transform = 'none';
+    btnNo.style.left = x + 'px';
+    btnNo.style.top = y + 'px';
+    dodgeCount++;
+    caption.textContent = captions[Math.min(dodgeCount-1, captions.length-1)];
+    caption.classList.add('show');
+    clearTimeout(caption._t);
+    caption._t = setTimeout(()=>caption.classList.remove('show'), 1400);
+    if(dodgeCount === 4){
+      btnYes.style.transform = 'scale(1.15)';
+    }
+  }
+  btnNo.addEventListener('mouseenter', dodge);
+  btnNo.addEventListener('touchstart', (e)=>{ e.preventDefault(); dodge(); }, {passive:false});
+  btnNo.addEventListener('click', (e)=>{ e.preventDefault(); dodge(); });
+
+  /* -------- calendar -------- */
+  const today = new Date(); today.setHours(0,0,0,0);
+  let viewYear = today.getFullYear();
+  let viewMonth = today.getMonth();
+  let selectedDate = null;
+
+  const dowNames = ['일','월','화','수','목','금','토'];
+  const monthLabel = document.getElementById('monthLabel');
+  const calGrid = document.getElementById('calGrid');
+  const prevBtn = document.getElementById('prevMonth');
+  const confirmBtn = document.getElementById('confirmBtn');
+
+  function renderCalendar(){
+    calGrid.innerHTML = '';
+    dowNames.forEach(d=>{
+      const el = document.createElement('div');
+      el.className = 'dow'; el.textContent = d;
+      calGrid.appendChild(el);
+    });
+    monthLabel.textContent = `${viewYear}년 ${viewMonth+1}월`;
+    const firstDow = new Date(viewYear, viewMonth, 1).getDay();
+    const daysInMonth = new Date(viewYear, viewMonth+1, 0).getDate();
+
+    for(let i=0;i<firstDow;i++){
+      const el = document.createElement('div');
+      el.className = 'cal-day empty';
+      calGrid.appendChild(el);
+    }
+    for(let d=1; d<=daysInMonth; d++){
+      const el = document.createElement('div');
+      el.className = 'cal-day';
+      el.textContent = d;
+      const thisDate = new Date(viewYear, viewMonth, d);
+      if(thisDate < today){
+        el.classList.add('past');
+      } else {
+        el.addEventListener('click', ()=>{
+          selectedDate = thisDate;
+          renderCalendar();
+          updateConfirmState();
+        });
+      }
+      if(selectedDate && thisDate.getTime() === selectedDate.getTime()){
+        el.classList.add('selected');
+      }
+      calGrid.appendChild(el);
+    }
+    const isCurrentMonth = (viewYear === today.getFullYear() && viewMonth === today.getMonth());
+    prevBtn.disabled = isCurrentMonth;
+  }
+  function changeMonth(delta){
+    viewMonth += delta;
+    if(viewMonth < 0){ viewMonth = 11; viewYear--; }
+    if(viewMonth > 11){ viewMonth = 0; viewYear++; }
+    renderCalendar();
+  }
+
+  const hourSel = document.getElementById('hourSel');
+  for(let h=1; h<=12; h++){
+    const opt = document.createElement('option');
+    opt.value = h; opt.textContent = h + '시';
+    if(h===7) opt.selected = true;
+    hourSel.appendChild(opt);
+  }
+  const minSel = document.getElementById('minSel');
+  const ampmSel = document.getElementById('ampmSel');
+  [hourSel, minSel, ampmSel].forEach(s=>s.addEventListener('change', updateConfirmState));
+
+  function updateConfirmState(){
+    confirmBtn.disabled = !selectedDate;
+  }
+  renderCalendar();
+
+  /* -------- activities -------- */
+  const selectedActivities = new Set();
+  const actConfirmBtn = document.getElementById('actConfirmBtn');
+  function toggleAct(card){
+    const act = card.dataset.act;
+    if(selectedActivities.has(act)){
+      selectedActivities.delete(act);
+      card.classList.remove('selected');
+    } else {
+      selectedActivities.add(act);
+      card.classList.add('selected');
+    }
+    actConfirmBtn.disabled = selectedActivities.size === 0;
+  }
+
+  function finalize(){
+    const weekday = dowNames[selectedDate.getDay()];
+    const dateStr = `${selectedDate.getFullYear()}년 ${selectedDate.getMonth()+1}월 ${selectedDate.getDate()}일 (${weekday})`;
+    const timeStr = `${ampmSel.value} ${hourSel.value}시 ${minSel.value}분`;
+    document.getElementById('doneDate').textContent = dateStr;
+    document.getElementById('doneTime').textContent = timeStr;
+
+    const actsBox = document.getElementById('doneActs');
+    actsBox.innerHTML = '';
+    selectedActivities.forEach(act=>{
+      const chip = document.createElement('span');
+      chip.textContent = act;
+      actsBox.appendChild(chip);
+    });
+    goTo(5);
+  }
+
+  /* -------- confetti -------- */
+  function burstConfetti(){
+    const emojis = ['🎉','💛','✨','🤍','🎀'];
+    for(let i=0;i<18;i++){
+      const c = document.createElement('div');
+      c.className = 'confetti';
+      c.textContent = emojis[Math.floor(Math.random()*emojis.length)];
+      c.style.left = Math.random()*100 + '%';
+      c.style.top = '-30px';
+      c.style.animationDuration = (2 + Math.random()*1.5) + 's';
+      document.getElementById('stage').appendChild(c);
+      setTimeout(()=>c.remove(), 3600);
+    }
+  }
+</script>
+</body>
+</html>
